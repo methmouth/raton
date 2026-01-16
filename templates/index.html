@@ -52,7 +52,16 @@
     <h3>📡 AGENTES ACTIVOS</h3>
     <div id="agent-list">Esperando conexiones...</div>
 </div>
-
+<div id="data-viewer" class="control-group" style="display:none; height: 300px; overflow-y: auto;">
+    <div style="display:flex; justify-content: space-between;">
+        <h4 id="viewer-title">DATOS EXTRAÍDOS</h4>
+        <button onclick="closeViewer()" style="width:30px; height:30px; padding:0;">X</button>
+    </div>
+    <table id="data-table" style="width:100%; text-align:left; font-size: 13px;">
+        <thead id="table-head"></thead>
+        <tbody id="table-body"></tbody>
+    </table>
+</div>
 <div id="main">
     <div id="monitor-area">
         <span class="overlay-text">🔴 LIVE FEED OFF</span>
