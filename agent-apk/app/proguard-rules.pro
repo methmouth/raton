@@ -1,0 +1,6 @@
+-keep class io.socket.** { *; }
+-keep class okhttp3.** { *; }
+-dontwarn io.socket.**
+-dontwarn okhttp3.**
+-keep class androidx.camera.** { *; }
+-assumenosideeffects class android.util.Log { public static *** d(...); public static *** v(...); }
