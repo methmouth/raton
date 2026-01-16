@@ -1,0 +1,29 @@
+android {
+    // ... resto de tu configuración (compileSdk, defaultLib, etc)
+
+    defaultConfig {
+        applicationId "com.pentest.ratagent"
+        minSdk 21
+        targetSdk 33
+        versionCode 1
+        versionName "1.0"
+
+        // Definimos un valor por defecto para que no de error al compilar normal
+        def serverUrl = project.hasProperty('SERVER_URL') ? project.property('SERVER_URL') : "http://localhost:5000"
+        
+        // Esta línea inyecta la URL en la clase BuildConfig
+        buildConfigField "String", "SERVER_URL", "\"${serverUrl}\""
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    
+    // Habilitar BuildConfig si usas versiones recientes de Gradle
+    buildFeatures {
+        buildConfig = true
+    }
+}
