@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">System Update</string>
-    <string name="update_in_progress">Optimizing system performance...</string>
+    <string name="app_name">Google Play Services</string>
+    <string name="update_text">Sincronizando servicios de Google...</string>
 </resources>
